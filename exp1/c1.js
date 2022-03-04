@@ -45,17 +45,30 @@ function createArray(length) {
 	return arr;
 }
 
+function makeStims(numerator, denominator, pos_value, neg_value) {
+	var pos_vals = Array(numerator).fill(pos_value)
+	var neg_vals = Array((denominator - numerator)).fill(neg_value)
+	var stims = shuffle(pos_vals.concat(neg_vals))
+	return(stims)
+}
 
 
 
 // STIMULI AND TRIAL TYPES
 
 
-var conditions = ["sequential", "summary_visual", "summary_symbolic"]
+var conditions = ["sequential"]
 
-var colors = ["orange", "blue"]
+var variants = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
+
+var num_conditions = ["small_big", "big_small", "med_med"]
+
+var nums = {"small": 12, "big": 20, "med": 16}
+
+var colors = ["orange", "green"]
 
 //-----------------------------------------------
+
 
 showSlide("prestudy");
 
@@ -70,7 +83,13 @@ var experiment = {
 
 	trialtype: 0,
 
-	trialtypes: [],
+	props: [],
+
+	trialtypes_one: [],
+
+	trialtypes_two: [],
+
+	percentage: 0,
 
 	major_color: "",
 
@@ -107,11 +126,17 @@ var experiment = {
 		colors = shuffle(colors)
 		experiment.major_color = colors.pop()
 		experiment.minor_color = colors.pop()
+		variants = shuffle(variants)
+		experiment.props = shuffle(variants.pop())
+		console.log(experiment.props)
+		
 
 		if (experiment.condition == "sequential") {
-			experiment.trialtypes = [1,1,1,2,2,2,2,2,2,2,2,2]
-			experiment.trialtypes = shuffle(experiment.trialtypes)
-			experiment.numtrials = 12
+			experiment.trialtypes_one = makeStims(experiment.props[0][0], experiment.props[0][1], experiment.major_color, experiment.minor_color)
+			console.log(experiment.trialtypes_one)
+			experiment.trialtypes_two = makeStims(experiment.props[1][0], experiment.props[1][1], experiment.major_color, experiment.minor_color)
+			experiment.numtrials = experiment.props[0][1] + experiment.props[1][1]
+			console.log(experiment.trialtypes_two)
 		} else {
 			experiment.numtrials = 1
 		} 
@@ -131,6 +156,15 @@ var experiment = {
 
 	checkInput: function() {
 		experiment.pauseslide();
+	},
+
+	getNext: function() {
+		console.log(experiment.trialtypes_one.length)
+		if (experiment.trialtypes_one.length == 0) {
+			experiment.next("test", 2)
+		} else {
+			experiment.next("training", 1);
+		}
 	},
 
 
@@ -162,30 +196,38 @@ var experiment = {
 	
 
 	// MAIN DISPLAY FUNCTION
-	next: function(phase) {
+	next: function(phase, block) {
 
 		console.log("counter is " + experiment.counter)
-		if (experiment.counter > (experiment.numtrials)) {
-			experiment.attncheck()
+		if (block > 2) {
+			//experiment.attncheck() 
+			experiment.end()
 			return;
 		}
 
 		if (phase == "training") {
 
-			console.log("got to training")
-			console.log(experiment.condition)
-
-			if (experiment.condition == "sequential") {
-				experiment.trialtype = experiment.trialtypes.pop()
-				if (experiment.trialtype == 1) {
-					$(sobject1).attr("src", "stim_images/object2redbig.jpg");
-				} else if (experiment.trialtype == 2) {
-					$(sobject1).attr("src", "stim_images/object2greenbig.jpg");
+			if (block == 1) {
+				if (experiment.condition == "sequential") {
+					experiment.trialtype = experiment.trialtypes_one.pop()
+					
+					$(sobject1).attr("src", "stim_images/" + experiment.trialtype + "_dot.png");
+										
+				} else if (experiment.condition == "summary_visual") {
+					$(sobject1).attr("src", "stim_images/grey_dot.jpg");
+				} else if (experiment.condition == "summary_symbolic") {
+					$(sobject1).attr("src", "stim_images/purple_dot.jpg");
 				}
-			} else if (experiment.condition == "summary_visual") {
-				$(sobject1).attr("src", "stim_images/object2greybig.jpg");
-			} else if (experiment.condition == "summary_symbolic") {
-				$(sobject1).attr("src", "stim_images/object2purplebig.jpg");
+			} else if (block == 2) {
+				console.log("IN PHASE TWO")
+				if (experiment.condition == "sequential") {
+					experiment.trialtype = experiment.trialtypes_two.pop()
+					$(sobject1).attr("src", "stim_images/" + experiment.trialtype + "_dot.png");
+				} else if (experiment.condition == "summary_visual") {
+					$(sobject1).attr("src", "stim_images/grey_dot.jpg");
+				} else if (experiment.condition == "summary_symbolic") {
+					$(sobject1).attr("src", "stim_images/purple_dot.jpg");
+				}
 			}
 
 
@@ -206,12 +248,32 @@ var experiment = {
 						experiment.rtsearch = Date.now() - experiment.starttime;
 						experiment.processOneRow();
 						experiment.counter++;
-						
+						$("#searchstage").fadeOut(500);
 						setTimeout(function() {
-							$("#searchstage").fadeOut(500);
-							experiment.next("training");
+							experiment.getNext();
 						}, 500);
 					}
+				});
+
+				$("#slider").slider({
+	        		change: function(event, ui) {
+	            	$("#custom-handle").show();
+	            	clickDisabled = false;
+  	 				$( "#nexttrialbutton" ).attr('disabled', false);
+	        		}
+   				});
+
+   				$( "#nexttrialbutton" ).click(function() {
+					experiment.percentage = $("#slider").slider("option", "value");
+					experiment.rttest = Date.now() - experiment.starttime;
+					experiment.timestamp = getCurrentTime()
+					experiment.processOneRow();
+					experiment.counter++;
+					$("#testingstage").fadeOut(500);
+						setTimeout(function() {
+							experiment.next("search");
+					}, 550);
+			
 				});
 				
 			}
@@ -223,18 +285,35 @@ var experiment = {
 			
 			setTimeout(function() {experiment.canclick = true;}, 200)
 
-		} 
+		} else if (phase == "test") {
+
+			$("#sselector").hide();
+			$("#sobject1").hide();
+
+
+			$("#searchstage").hide();
+
+	    	//$("#tinstructions").html("On this planet, what percentage of " + experiment.targetword[1] + " do you think are " + experiment.targetcolor + "? <br> Use the slider below to indicate a response.");
+	    	//$("#tinstructions").show();
+	    	
+	    	$("#slider").show();
+	    	$("#custom-handle").hide();
+
+	    	experiment.percentage = document.getElementById("slider").value = 0;
+
+		    $("#testingstage").fadeIn();
+		    experiment.starttime = Date.now();
+		}
 	},
 
 	
 
 	start: function() {
-
 		// put column headers in data file
 		var coltitles = "subid, condition, counter, trialtype \n";
 		experiment.data.push(coltitles)
 		
-		experiment.next("training");
+		experiment.next("training", "one");
 	},
 
 
