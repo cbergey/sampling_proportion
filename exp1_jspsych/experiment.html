@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sampling experiment</title>
+    <script src="jspsych/jspsych.js"></script>
+    <script src="jspsych/plugin-image-button-response.js"></script>
+    <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/plugin-image-button-response.js"></script>
+    <script src="jspsych/plugin-preload.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.0"></script>
+    <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+  	var jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+
+    shuffle = function (o) { //v1.0
+    	for (var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+    		return o;
+    }
+
+  	var conditions = ["sequential"]
+
+	var variants = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
+
+	var num_conditions = ["small_big", "big_small", "med_med"]
+
+	var nums = {"small": 12, "big": 20, "med": 16}
+
+	var colors = ["stim_images/orange_dot.png", "stim_images/green_dot.png"]
+
+	function makeTrials(numerator, denominator, pos_value, neg_value) {
+		var pos_vals = Array(numerator).fill(pos_value)
+		var neg_vals = Array((denominator - numerator)).fill(neg_value)
+		var stims = shuffle(pos_vals.concat(neg_vals))
+		return(stims)
+	}
+
+	function makeTrial(image) {
+		return({stimulus: image})
+	}
+
+
+	conditions = shuffle(conditions);
+	var condition = conditions.pop();
+	colors = shuffle(colors)
+	var major_color = colors.pop()
+	var minor_color = colors.pop()
+	variants = shuffle(variants)
+	var props = shuffle(variants.pop())
+
+	var phase_one = makeTrials(props[0][0], props[0][1], major_color, minor_color)
+	var phase_two = makeTrials(props[1][0], props[1][1], major_color, minor_color)
+
+	var timeline = [];
+
+  	var preload = {
+  		type: jsPsychPreload,
+  		images: ['stim_images/orange_dot.png', 'stim_images/green_dot.png']
+  	};
+  	timeline.push(preload);
+
+  	var instructions = {
+  		type: jsPsychHtmlButtonResponse,
+  		stimulus: `
+  		<p>You will see boxes with different colored balls in them. We will show you some of the balls from the box and then ask you questions about what you think the box is like. </p>
+    	`,
+    	choices: ['Next'],
+    	post_trial_gap: 1000
+    };
+
+    timeline.push(instructions)
+
+    var phase_one_stimuli = [];
+  	for (let i = 0; i < phase_one.length; i++) {
+  		phase_one_stimuli.push({stimulus: phase_one[i]})
+  	}
+
+
+    timeline.push({
+      type: jsPsychPreload,
+      auto_preload: true
+    });
+
+	var test = {
+  		type: jsPsychImageButtonResponse,
+  		stimulus: jsPsych.timelineVariable('stimulus'),
+  		choices: ['Next'],
+  		stimulus_width: 400,
+  		post_trial_gap: 500
+  	}
+
+  	var test_procedure = {
+  		timeline: [test],
+  		timeline_variables: phase_one_stimuli
+	}
+
+  	timeline.push(test_procedure)
+
+
+    jsPsych.run(timeline);
+  </script>
+</html>
