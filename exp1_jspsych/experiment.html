@@ -5,6 +5,7 @@
     <script src="jspsych/jspsych.js"></script>
     <script src="jspsych/plugin-image-button-response.js"></script>
     <script src="jspsych/plugin-html-button-response.js"></script>
+    <script src="jspsych/plugin-html-slider-response.js"></script>
     <script src="jspsych/plugin-image-button-response.js"></script>
     <script src="jspsych/plugin-preload.js"></script>
     <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.0"></script>
@@ -31,7 +32,7 @@
 
 	var nums = {"small": 12, "big": 20, "med": 16}
 
-	var colors = ["stim_images/orange_dot.png", "stim_images/green_dot.png"]
+	var colors = ["orange", "green"]
 
 	function makeTrials(numerator, denominator, pos_value, neg_value) {
 		var pos_vals = Array(numerator).fill(pos_value)
@@ -50,11 +51,13 @@
 	colors = shuffle(colors)
 	var major_color = colors.pop()
 	var minor_color = colors.pop()
+	var major_color_img = 'stim_images/' + major_color + '_dot.png'
+	var minor_color_img = 'stim_images/' + minor_color + '_dot.png'
 	variants = shuffle(variants)
 	var props = shuffle(variants.pop())
 
-	var phase_one = makeTrials(props[0][0], props[0][1], major_color, minor_color)
-	var phase_two = makeTrials(props[1][0], props[1][1], major_color, minor_color)
+	var phase_one = makeTrials(props[0][0], props[0][1], major_color_img, minor_color_img)
+	var phase_two = makeTrials(props[1][0], props[1][1], major_color_img, minor_color_img)
 
 	var timeline = [];
 
@@ -75,18 +78,23 @@
 
     timeline.push(instructions)
 
+    phase_one_instructions = "<p>In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
+
+    var phase_one_instructions = {
+  		type: jsPsychHtmlButtonResponse,
+  		stimulus: phase_one_instructions,
+    	choices: ['Next'],
+    	post_trial_gap: 1000
+    };
+
+    timeline.push(phase_one_instructions)
+
     var phase_one_stimuli = [];
   	for (let i = 0; i < phase_one.length; i++) {
   		phase_one_stimuli.push({stimulus: phase_one[i]})
   	}
 
-
-    timeline.push({
-      type: jsPsychPreload,
-      auto_preload: true
-    });
-
-	var test = {
+	var phase_one = {
   		type: jsPsychImageButtonResponse,
   		stimulus: jsPsych.timelineVariable('stimulus'),
   		choices: ['Next'],
@@ -94,12 +102,90 @@
   		post_trial_gap: 500
   	}
 
-  	var test_procedure = {
-  		timeline: [test],
+  	var phase_one_procedure = {
+  		timeline: [phase_one],
   		timeline_variables: phase_one_stimuli
 	}
 
-  	timeline.push(test_procedure)
+	timeline.push(phase_one_procedure)
+
+	numerator_q = "<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are " + major_color + "?</p>"
+	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
+
+	var numerator_dv = {
+      type: jsPsychHtmlSliderResponse,
+      labels: ['None (0%)', 'All (100%)'],
+      stimulus: "",
+      slider_width: 500,
+      require_movement: true,
+      prompt: numerator_q
+    };
+
+    var denominator_dv = {
+      type: jsPsychHtmlSliderResponse,
+      labels: ['None (0%)', 'All (100%)'],
+      stimulus: "",
+      slider_width: 500,
+      require_movement: true,
+      prompt: denominator_q
+    };
+    timeline.push(numerator_dv)
+    timeline.push(denominator_dv)
+
+
+	phase_two_instructions = "<p>Now we will show you more balls from the same box.</p>"
+
+    var phase_two_instructions = {
+  		type: jsPsychHtmlButtonResponse,
+  		stimulus: phase_two_instructions,
+    	choices: ['Next'],
+    	post_trial_gap: 1000
+    };
+
+    timeline.push(phase_two_instructions)
+
+    var phase_two_stimuli = [];
+  	for (let i = 0; i < phase_two.length; i++) {
+  		phase_two_stimuli.push({stimulus: phase_two[i]})
+  	}
+
+	var phase_two = {
+  		type: jsPsychImageButtonResponse,
+  		stimulus: jsPsych.timelineVariable('stimulus'),
+  		choices: ['Next'],
+  		stimulus_width: 400,
+  		post_trial_gap: 500
+  	}
+
+	var phase_two_procedure = {
+  		timeline: [phase_two],
+  		timeline_variables: phase_two_stimuli
+	}
+
+  	timeline.push(phase_two_procedure)
+
+  	numerator_q = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
+	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
+
+	var numerator_dv = {
+      type: jsPsychHtmlSliderResponse,
+      labels: ['None (0%)', 'All (100%)'],
+      stimulus: "",
+      slider_width: 500,
+      require_movement: true,
+      prompt: numerator_q
+    };
+
+    var denominator_dv = {
+      type: jsPsychHtmlSliderResponse,
+      labels: ['None (0%)', 'All (100%)'],
+      stimulus: "",
+      slider_width: 500,
+      require_movement: true,
+      prompt: denominator_q
+    };
+    timeline.push(numerator_dv)
+    timeline.push(denominator_dv)
 
 
     jsPsych.run(timeline);
