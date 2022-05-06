@@ -27,7 +27,7 @@
 		return o;
 	}
 
-	var conditions = ["sequential", "simultaneous"]
+	var conditions = ["simultaneous"] //"sequential",
 
 	var variants = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
 
@@ -60,8 +60,27 @@
 		var stims = shuffle(pos_vals.concat(neg_vals))
 		return (stims)
 	}
+
 	var phase_one_list = makeTrials(props[0][0], props[0][1], major_color, minor_color)
 	var phase_two_list = makeTrials(props[1][0], props[1][1], major_color, minor_color)
+
+	if (condition == "sequential") {
+		var drawCondition = drawOneDot;
+		var phase1Details = phase_one_list;
+		var phase2Details = phase_two_list;
+	};
+	if (condition == "simultaneous") {
+		var drawCondition = drawAllDotsRandom;
+		//because of the way the stimulus variable works to get number of repeats for trials
+		//there's probably a better way, but this works
+		var phase1Details = [
+			{ num: props[0][0], den: props[0][1] }
+		];
+		var phase2Details = [
+			{ num: props[1][0], den: props[1][1] }
+		];
+	};
+
 
 	//function for sequntial condition
 	function drawOneDot(c) {
@@ -90,7 +109,7 @@
 		ctx.closePath();
 	};
 
-	function drawAllDots(c) {
+	function drawAllDotsGrid(c) {
 		//use appropriate list
 		if (samplePhase == 1) {
 			curList = phase_one_list
@@ -130,6 +149,67 @@
 		}
 	};
 
+	function drawAllDotsRandom(c) {
+		//use appropriate list
+		if (samplePhase == 1) {
+			curList = phase_one_list
+		};
+		if (samplePhase == 2) {
+			curList = phase_two_list
+		};
+		// initialize with first dot
+		var dots = [];
+		var check = 0;
+		var gap = 10;
+		// until we have all the dots we need for this stimulus
+		while (dots.length < curList.length) {
+
+			// creates a dot variable that includes the x and y positions and some basic data about what stim that dot will become part of
+			var dot = {
+				x: Math.floor(Math.random() * (600 - 2 * radius) + radius),
+				y: Math.floor(Math.random() * (600 - 2 * radius) + radius),
+				radius: radius
+			}
+
+			// now checking for overlap between the dot we just made above and the previously made dots
+			// assume overlap is false, check overlap, update to true if needed only
+			var overlap = false;
+
+			for (var i = 0; i < dots.length; i++) {
+				var newDot = dots[i]
+				// distance is between the centers of the two dots
+				// this distance needs to be larger than the radii of each dot + the required minimum gap
+				function dist(x1, x2, y1, y2) {
+					return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+				};
+				var distance = dist(dot.x, newDot.x, dot.y, newDot.y);
+				if (distance < dot.radius + newDot.radius + gap) {
+					overlap = true;
+					break;
+				}
+			}
+			// if overlap is false, then we push the dot we created to the list
+			if (!overlap) {
+				dots.push(dot);
+			}
+			check++;
+
+			if (check > 10000) {
+				break;
+			}
+		}
+		var ctx = c.getContext(`2d`);
+
+		//draw each dot
+		for (d = 0; d < curList.length; d++) {
+			ctx.beginPath();
+			ctx.moveTo(dots[d].x, dots[d].y);
+			ctx.arc(dots[d].x, dots[d].y, radius, 0, Math.PI * 2);
+			ctx.fillStyle = curList[d];
+			ctx.fill();
+			ctx.closePath();
+		}
+	};
 
 	// initialize timeline and push each aspect of procedure as we go
 	var timeline = [];
@@ -170,13 +250,6 @@
 
 	// sample 1, phase 1 - stim presentation procedure
 
-	if (condition == "sequential") {
-		var drawCondition = drawOneDot;
-	};
-	if (condition == "simultaneous") {
-		var drawCondition = drawAllDots;
-	};
-
 	var phase_one_display = {
 		type: jsPsychCanvasKeyboardResponse,
 		canvas_size: [600, 600],
@@ -190,7 +263,7 @@
 
 	var phase_one_procedure = {
 		timeline: [phase_one_display],
-		timeline_variables: phase_one_list
+		timeline_variables: phase1Details
 	}
 
 	timeline.push(phase_one_procedure)
@@ -250,11 +323,11 @@
 
 	var phase_two_procedure = {
 		timeline: [phase_two_display],
-		timeline_variables: phase_two_list
+		timeline_variables: phase2Details
 	}
 
 	timeline.push(phase_two_procedure)
-// DVs after the second sample, i.e., phase 2
+	// DVs after the second sample, i.e., phase 2
 	numerator_q = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
 	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
