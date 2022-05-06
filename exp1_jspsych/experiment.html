@@ -1,192 +1,285 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Sampling experiment</title>
-    <script src="https://unpkg.com/jspsych@7.1.2"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.1.0"></script>
+
+<head>
+	<title>Sampling experiment</title>
+	<script src="https://unpkg.com/jspsych@7.1.2"></script>
+	<script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych//plugin-html-button-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.1.0"></script>
+	<script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-preload@1.1.0"></script>
-    <link href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css" rel="stylesheet" type="text/css" />
-  </head>
-  <body></body>
-  <script>
-  	var jsPsych = initJsPsych({
-      on_finish: function() {
-        jsPsych.data.displayData();
-      }
-    });
+	<link href="https://unpkg.com/jspsych@7.1.2/css/jspsych.css" rel="stylesheet" type="text/css" />
+</head>
 
-    shuffle = function (o) { //v1.0
-    	for (var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-    		return o;
-    }
+<body></body>
+<script>
 
-  	var conditions = ["sequential"]
+	var jsPsych = initJsPsych({
+		on_finish: function () {
+			jsPsych.data.displayData();
+		}
+	});
+
+	shuffle = function (o) { //v1.0
+		for (var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+		return o;
+	}
+
+	var conditions = ["sequential", "simultaneous"]
 
 	var variants = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
 
-	var num_conditions = ["small_big", "big_small", "med_med"]
+	var num_conditions = ["small_big", "big_small", "med_med"] //what are these?
 
-	var nums = {"small": 12, "big": 20, "med": 16}
+	var nums = { "small": 12, "big": 20, "med": 16 } //what are these?
 
 	var colors = ["orange", "green"]
 
-	function makeTrials(numerator, denominator, pos_value, neg_value) {
-		var pos_vals = Array(numerator).fill(pos_value)
-		var neg_vals = Array((denominator - numerator)).fill(neg_value)
-		var stims = shuffle(pos_vals.concat(neg_vals))
-		return(stims)
-	}
 
-	function makeTrial(image) {
-		return({stimulus: image})
-	}
-
-
+	// setting a bunch of features
 	conditions = shuffle(conditions);
 	var condition = conditions.pop();
 	colors = shuffle(colors)
 	var major_color = colors.pop()
 	var minor_color = colors.pop()
-	var major_color_img = 'stim_images/' + major_color + '_dot.png'
-	var minor_color_img = 'stim_images/' + minor_color + '_dot.png'
+	var major_color_img = 'stim_images/' + major_color + '_dot.png' //can delete?
+	var minor_color_img = 'stim_images/' + minor_color + '_dot.png' //can delete?
 	variants = shuffle(variants)
 	var props = shuffle(variants.pop())
+	var radius = 30;
+	var samplePhase = 0; //this will be 1 for phase 1, 2 for phase 2; initializing to 0
+	var curTrial = 0; //so that we can track the sample number for the sequential condition
 
-	var phase_one = makeTrials(props[0][0], props[0][1], major_color_img, minor_color_img)
-	var phase_two = makeTrials(props[1][0], props[1][1], major_color_img, minor_color_img)
+	//making the stimuli and functions for drawing stimuli
+	//first, make the list of colors; this will be used for the order of stim in the sequential and simultaneous versions
+	function makeTrials(numerator, denominator, pos_value, neg_value) {
+		var pos_vals = Array(numerator).fill(pos_value)
+		var neg_vals = Array((denominator - numerator)).fill(neg_value)
+		var stims = shuffle(pos_vals.concat(neg_vals))
+		return (stims)
+	}
+	var phase_one_list = makeTrials(props[0][0], props[0][1], major_color, minor_color)
+	var phase_two_list = makeTrials(props[1][0], props[1][1], major_color, minor_color)
 
+	//function for sequntial condition
+	function drawOneDot(c) {
+		//use appropriate list
+		if (samplePhase == 1) {
+			curList = phase_one_list
+		};
+		if (samplePhase == 2) {
+			curList = phase_two_list
+		};
+		// set parameters for dot
+		var onlyDot = {
+			x: 300,
+			y: 200,
+			radius: radius,
+			color: curList[curTrial]
+		}
+
+		var ctx = c.getContext(`2d`);
+		//draw the dot
+		ctx.beginPath();
+		ctx.moveTo(onlyDot.x, onlyDot.y);
+		ctx.arc(onlyDot.x, onlyDot.y, radius, 0, Math.PI * 2);
+		ctx.fillStyle = onlyDot.color;
+		ctx.fill();
+		ctx.closePath();
+	};
+
+	function drawAllDots(c) {
+		//use appropriate list
+		if (samplePhase == 1) {
+			curList = phase_one_list
+		};
+		if (samplePhase == 2) {
+			curList = phase_two_list
+		};
+		// initialize with first dot
+		var dots = [];
+		var firstDot = {
+			x: 140 + 10 + radius,
+			y: 10 + radius,
+			radius: radius,
+			color: curList[0]
+		}
+		dots.push(firstDot)
+		for (var d = 1; d < curList.length; d++) {
+			var dot = {
+				x: (140 + 10 + radius) + (radius * 2 + 10) * (d % 4),
+				y: (10 + radius) + (radius * 2 + 10) * (Math.floor(d / 4)),
+				radius: radius,
+				color: curList[d]
+			}
+			dots.push(dot)
+		}
+
+		var ctx = c.getContext(`2d`);
+
+		//draw each dot
+		for (d = 0; d < curList.length; d++) {
+			ctx.beginPath();
+			ctx.moveTo(dots[d].x, dots[d].y);
+			ctx.arc(dots[d].x, dots[d].y, radius, 0, Math.PI * 2);
+			ctx.fillStyle = dots[d].color;
+			ctx.fill();
+			ctx.closePath();
+		}
+	};
+
+
+	// initialize timeline and push each aspect of procedure as we go
 	var timeline = [];
+	// preloading images - but we can remove this if we're drawing dots instead, right?
+	//but maybe need to pre-load the image of a box if we're using that?
+	var preload = {
+		type: jsPsychPreload,
+		images: ['stim_images/orange_dot.png', 'stim_images/green_dot.png']
+	};
+	timeline.push(preload);
 
-  	var preload = {
-  		type: jsPsychPreload,
-  		images: ['stim_images/orange_dot.png', 'stim_images/green_dot.png']
-  	};
-  	timeline.push(preload);
-
-  	var instructions = {
-  		type: jsPsychHtmlButtonResponse,
-  		stimulus: `
+	// overall task instructions
+	var instructions = {
+		type: jsPsychHtmlButtonResponse,
+		stimulus: `
   		<p>You will see boxes with different colored balls in them. We will show you some of the balls from the box and then ask you questions about what you think the box is like. </p>
     	`,
-    	choices: ['Next'],
-    	post_trial_gap: 1000
-    };
+		choices: ['Next'],
+		post_trial_gap: 1000
+	};
 
-    timeline.push(instructions)
+	timeline.push(instructions)
 
-    phase_one_instructions = "<p>In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
+	// instructions for drawing sample 1, i.e., phase one
+	phase_one_instructions = "<p>In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
 
-    var phase_one_instructions = {
-  		type: jsPsychHtmlButtonResponse,
-  		stimulus: phase_one_instructions,
-    	choices: ['Next'],
-    	post_trial_gap: 1000
-    };
+	var phase_one_instructions = {
+		type: jsPsychHtmlButtonResponse,
+		stimulus: phase_one_instructions,
+		choices: ['Next'],
+		post_trial_gap: 1000,
+		on_start: function () {
+			samplePhase = 1;
+		}
+	};
 
-    timeline.push(phase_one_instructions)
+	timeline.push(phase_one_instructions)
 
-    var phase_one_stimuli = [];
-  	for (let i = 0; i < phase_one.length; i++) {
-  		phase_one_stimuli.push({stimulus: phase_one[i]})
-  	}
+	// sample 1, phase 1 - stim presentation procedure
 
-	var phase_one = {
-  		type: jsPsychImageButtonResponse,
-  		stimulus: jsPsych.timelineVariable('stimulus'),
-  		choices: ['Next'],
-  		stimulus_width: 400,
-  		post_trial_gap: 500
-  	}
+	if (condition == "sequential") {
+		var drawCondition = drawOneDot;
+	};
+	if (condition == "simultaneous") {
+		var drawCondition = drawAllDots;
+	};
 
-  	var phase_one_procedure = {
-  		timeline: [phase_one],
-  		timeline_variables: phase_one_stimuli
+	var phase_one_display = {
+		type: jsPsychCanvasKeyboardResponse,
+		canvas_size: [600, 600],
+		stimulus: drawCondition,
+		choices: ` `, //this is space
+		post_trial_gap: 500,
+		on_finish: function () {
+			curTrial++;
+		}
+	}
+
+	var phase_one_procedure = {
+		timeline: [phase_one_display],
+		timeline_variables: phase_one_list
 	}
 
 	timeline.push(phase_one_procedure)
 
+	// DVs after the first sample, i.e., phase 1
 	numerator_q = "<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are " + major_color + "?</p>"
 	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
 	var numerator_dv = {
-      type: jsPsychHtmlSliderResponse,
-      labels: ['None (0%)', 'All (100%)'],
-      stimulus: "",
-      slider_width: 500,
-      require_movement: true,
-      prompt: numerator_q
-    };
+		type: jsPsychHtmlSliderResponse,
+		labels: ['None (0%)', 'All (100%)'],
+		stimulus: "",
+		slider_width: 500,
+		require_movement: true,
+		prompt: numerator_q
+	};
 
-    var denominator_dv = {
-      type: jsPsychHtmlSliderResponse,
-      labels: ['None (0%)', 'All (100%)'],
-      stimulus: "",
-      slider_width: 500,
-      require_movement: true,
-      prompt: denominator_q
-    };
-    timeline.push(numerator_dv)
-    timeline.push(denominator_dv)
+	var denominator_dv = {
+		type: jsPsychHtmlSliderResponse,
+		labels: ['None (0%)', 'All (100%)'],
+		stimulus: "",
+		slider_width: 500,
+		require_movement: true,
+		prompt: denominator_q
+	};
+	timeline.push(numerator_dv)
+	timeline.push(denominator_dv)
 
-
+	//phase 2 begins
+	//phase 2 instructions
 	phase_two_instructions = "<p>Now we will show you more balls from the same box.</p>"
 
-    var phase_two_instructions = {
-  		type: jsPsychHtmlButtonResponse,
-  		stimulus: phase_two_instructions,
-    	choices: ['Next'],
-    	post_trial_gap: 1000
-    };
+	var phase_two_instructions = {
+		type: jsPsychHtmlButtonResponse,
+		stimulus: phase_two_instructions,
+		choices: ['Next'],
+		post_trial_gap: 1000,
+		on_start: function () {
+			samplePhase = 2;
+			curTrial = 0; //resetting to 0 for phase 2, but needed only for sequential condition
+		}
+	};
 
-    timeline.push(phase_two_instructions)
+	timeline.push(phase_two_instructions)
 
-    var phase_two_stimuli = [];
-  	for (let i = 0; i < phase_two.length; i++) {
-  		phase_two_stimuli.push({stimulus: phase_two[i]})
-  	}
-
-	var phase_two = {
-  		type: jsPsychImageButtonResponse,
-  		stimulus: jsPsych.timelineVariable('stimulus'),
-  		choices: ['Next'],
-  		stimulus_width: 400,
-  		post_trial_gap: 500
-  	}
-
-	var phase_two_procedure = {
-  		timeline: [phase_two],
-  		timeline_variables: phase_two_stimuli
+	//sample 2; i.e., phase 2 - stim presentation procedure
+	var phase_two_display = {
+		type: jsPsychCanvasKeyboardResponse,
+		canvas_size: [600, 600],
+		stimulus: drawCondition,
+		choices: ` `, //this is space
+		post_trial_gap: 500,
+		on_finish: function () {
+			curTrial++;
+		}
 	}
 
-  	timeline.push(phase_two_procedure)
+	var phase_two_procedure = {
+		timeline: [phase_two_display],
+		timeline_variables: phase_two_list
+	}
 
-  	numerator_q = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
+	timeline.push(phase_two_procedure)
+// DVs after the second sample, i.e., phase 2
+	numerator_q = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
 	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
 	var numerator_dv = {
-      type: jsPsychHtmlSliderResponse,
-      labels: ['None (0%)', 'All (100%)'],
-      stimulus: "",
-      slider_width: 500,
-      require_movement: true,
-      prompt: numerator_q
-    };
+		type: jsPsychHtmlSliderResponse,
+		labels: ['None (0%)', 'All (100%)'],
+		stimulus: "",
+		slider_width: 500,
+		require_movement: true,
+		prompt: numerator_q
+	};
 
-    var denominator_dv = {
-      type: jsPsychHtmlSliderResponse,
-      labels: ['None (0%)', 'All (100%)'],
-      stimulus: "",
-      slider_width: 500,
-      require_movement: true,
-      prompt: denominator_q
-    };
-    timeline.push(numerator_dv)
-    timeline.push(denominator_dv)
+	var denominator_dv = {
+		type: jsPsychHtmlSliderResponse,
+		labels: ['None (0%)', 'All (100%)'],
+		stimulus: "",
+		slider_width: 500,
+		require_movement: true,
+		prompt: denominator_q
+	};
+	timeline.push(numerator_dv)
+	timeline.push(denominator_dv)
 
 
-    jsPsych.run(timeline);
-  </script>
+	jsPsych.run(timeline);
+</script>
+
 </html>
