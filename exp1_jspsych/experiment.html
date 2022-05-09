@@ -27,13 +27,9 @@
 		return o;
 	}
 
-	var conditions = ["sequential", "simultaneous"] 
+	var conditions = ["sequential", "simultaneous"]
 
 	var variants = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
-
-	var num_conditions = ["small_big", "big_small", "med_med"] //what are these?
-
-	var nums = { "small": 12, "big": 20, "med": 16 } //what are these?
 
 	var colors = ["orange", "green"]
 
@@ -41,15 +37,17 @@
 	// setting a bunch of features
 	conditions = shuffle(conditions);
 	var condition = conditions.pop();
+
 	colors = shuffle(colors)
 	var major_color = colors.pop()
 	var minor_color = colors.pop()
-	var major_color_img = 'stim_images/' + major_color + '_dot.png' //can delete?
-	var minor_color_img = 'stim_images/' + minor_color + '_dot.png' //can delete?
+
 	variants = shuffle(variants)
 	var box1props = shuffle(variants.pop())
 	var box2props = shuffle(variants.pop())
+
 	var radius = 30;
+
 	var samplePhase = 0; //this will be 1 for phase 1, 2 for phase 2; initializing to 0
 	var curTrial = 0; //so that we can track the sample number for the sequential condition
 
@@ -227,12 +225,23 @@
 
 	// *********** BOX ONE *********** //
 
+	//need to make the box1_details 
+	// 	box1_details
+	// needs to include:
+	// “instruction_phrase” for each sample
+	// “num_dv_phrase” for each sample
+	// “rem_dv_phrase” for each sample
+	// “current_list” —> the name of the list of green/orange
+
 	// instructions for drawing sample 1, i.e., phase one
 	phase_one_instructions = "<p>In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
+	numerator_q_1 = "<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are " + major_color + "?</p>"
+	denominator_q_1 = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
-	var phase_one_instructions = {
+
+	var instructions = {
 		type: jsPsychHtmlButtonResponse,
-		stimulus: phase_one_instructions,
+		stimulus: jsPsych.timelineVariable(`instruction_phrase`),
 		choices: ['Next'],
 		post_trial_gap: 1000,
 		on_start: function () {
@@ -240,12 +249,10 @@
 		}
 	};
 
-	timeline.push(phase_one_instructions)
-
 	// sample 1, phase 1 - stim presentation procedure
 
 	var current_list = box_one_phase_one_list
-	var phase_one_display = {
+	var dot_display = {
 		type: jsPsychCanvasKeyboardResponse,
 		canvas_size: [600, 600],
 		stimulus: drawCondition,
@@ -253,39 +260,43 @@
 		post_trial_gap: 500,
 		on_finish: function () {
 			curTrial++;
+		},
+		timeline: function () {
+			if (condition == "sequential") {
+				return current_list//a timeline with denominator number of elements, one for each dot
+			}
+			if (condition == "simultaneous") {
+				return [current_list]// a timeline with one element, with the needed information about each dot
+			}
 		}
 	}
 
-	var phase_one_procedure = {
-		timeline: [phase_one_display],
-		timeline_variables: box1phase1Details
+	var numerator_dv = {
+		type: jsPsychHtmlSliderResponse,
+		labels: ['None (0%)', 'All (100%)'],
+		stimulus: "",
+		slider_width: 500,
+		require_movement: true,
+		prompt: jsPsych.timelineVariable(`num_dv_phrase`)
+	};
+
+	var remainder_dv = {
+		type: jsPsychHtmlSliderResponse,
+		labels: ['None (0%)', 'All (100%)'],
+		stimulus: "",
+		slider_width: 500,
+		require_movement: true,
+		prompt: jsPsych.timelineVariable(`rem_dv_phrase`)
+	};
+
+	var sample_procedure = {
+		timeline: [instructions, dot_display, numerator_dv, remainder_dv],
+		timeline_variables: box1_phrases
 	}
 
-	timeline.push(phase_one_procedure)
+	timeline.push(sample_procedure)
 
 	// DVs after the first sample, i.e., phase 1
-	numerator_q_1 = "<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are " + major_color + "?</p>"
-	denominator_q_1 = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
-
-	var numerator_dv_1 = {
-		type: jsPsychHtmlSliderResponse,
-		labels: ['None (0%)', 'All (100%)'],
-		stimulus: "",
-		slider_width: 500,
-		require_movement: true,
-		prompt: numerator_q_1
-	};
-
-	var denominator_dv_1 = {
-		type: jsPsychHtmlSliderResponse,
-		labels: ['None (0%)', 'All (100%)'],
-		stimulus: "",
-		slider_width: 500,
-		require_movement: true,
-		prompt: denominator_q_1
-	};
-	timeline.push(numerator_dv_1)
-	timeline.push(denominator_dv_1)
 
 	//phase 2 begins
 	//phase 2 instructions
@@ -386,7 +397,7 @@
 	}
 
 	timeline.push(box_two_phase_two_procedure)
-	
+
 	timeline.push(numerator_dv_2)
 	timeline.push(denominator_dv_2)
 
