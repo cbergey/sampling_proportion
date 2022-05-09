@@ -5,7 +5,7 @@
 	<title>Sampling experiment</title>
 	<script src="https://unpkg.com/jspsych@7.1.2"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.1.0"></script>
-	<script src="https://unpkg.com/@jspsych//plugin-html-button-response@1.1.0"></script>
+	<script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.1.0"></script>
 	<script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response@1.1.0"></script>
@@ -47,7 +47,8 @@
 	var major_color_img = 'stim_images/' + major_color + '_dot.png' //can delete?
 	var minor_color_img = 'stim_images/' + minor_color + '_dot.png' //can delete?
 	variants = shuffle(variants)
-	var props = shuffle(variants.pop())
+	var box1props = shuffle(variants.pop())
+	var box2props = shuffle(variants.pop())
 	var radius = 30;
 	var samplePhase = 0; //this will be 1 for phase 1, 2 for phase 2; initializing to 0
 	var curTrial = 0; //so that we can track the sample number for the sequential condition
@@ -61,42 +62,45 @@
 		return (stims)
 	}
 
-	var phase_one_list = makeTrials(props[0][0], props[0][1], major_color, minor_color)
-	var phase_two_list = makeTrials(props[1][0], props[1][1], major_color, minor_color)
+	var box_one_phase_one_list = makeTrials(box1props[0][0], box1props[0][1], major_color, minor_color)
+	var box_one_phase_two_list = makeTrials(box1props[1][0], box1props[1][1], major_color, minor_color)
+	var box_two_phase_one_list = makeTrials(box2props[0][0], box2props[0][1], major_color, minor_color)
+	var box_two_phase_two_list = makeTrials(box2props[1][0], box2props[1][1], major_color, minor_color)
 
 	if (condition == "sequential") {
 		var drawCondition = drawOneDot;
-		var phase1Details = phase_one_list;
-		var phase2Details = phase_two_list;
+		var box1phase1Details = box_one_phase_one_list;
+		var box1phase2Details = box_one_phase_two_list;
+		var box2phase1Details = box_two_phase_one_list;
+		var box2phase2Details = box_two_phase_two_list;
 	};
 	if (condition == "simultaneous") {
 		var drawCondition = drawAllDotsRandom;
 		//because of the way the stimulus variable works to get number of repeats for trials
 		//there's probably a better way, but this works
-		var phase1Details = [
-			{ num: props[0][0], den: props[0][1] }
+		var box1phase1Details = [
+			{ num: box1props[0][0], den: box1props[0][1] }
 		];
-		var phase2Details = [
-			{ num: props[1][0], den: props[1][1] }
+		var box1phase2Details = [
+			{ num: box1props[1][0], den: box1props[1][1] }
+		];
+		var box2phase1Details = [
+			{ num: box2props[0][0], den: box2props[0][1] }
+		];
+		var box2phase2Details = [
+			{ num: box2props[1][0], den: box2props[1][1] }
 		];
 	};
 
 
 	//function for sequntial condition
 	function drawOneDot(c) {
-		//use appropriate list
-		if (samplePhase == 1) {
-			curList = phase_one_list
-		};
-		if (samplePhase == 2) {
-			curList = phase_two_list
-		};
 		// set parameters for dot
 		var onlyDot = {
 			x: 300,
 			y: 200,
 			radius: radius,
-			color: curList[curTrial]
+			color: current_list[curTrial]
 		}
 
 		var ctx = c.getContext(`2d`);
@@ -110,28 +114,21 @@
 	};
 
 	function drawAllDotsGrid(c) {
-		//use appropriate list
-		if (samplePhase == 1) {
-			curList = phase_one_list
-		};
-		if (samplePhase == 2) {
-			curList = phase_two_list
-		};
 		// initialize with first dot
 		var dots = [];
 		var firstDot = {
 			x: 140 + 10 + radius,
 			y: 10 + radius,
 			radius: radius,
-			color: curList[0]
+			color: current_list[0]
 		}
 		dots.push(firstDot)
-		for (var d = 1; d < curList.length; d++) {
+		for (var d = 1; d < current_list.length; d++) {
 			var dot = {
 				x: (140 + 10 + radius) + (radius * 2 + 10) * (d % 4),
 				y: (10 + radius) + (radius * 2 + 10) * (Math.floor(d / 4)),
 				radius: radius,
-				color: curList[d]
+				color: current_list[d]
 			}
 			dots.push(dot)
 		}
@@ -139,7 +136,7 @@
 		var ctx = c.getContext(`2d`);
 
 		//draw each dot
-		for (d = 0; d < curList.length; d++) {
+		for (d = 0; d < current_list.length; d++) {
 			ctx.beginPath();
 			ctx.moveTo(dots[d].x, dots[d].y);
 			ctx.arc(dots[d].x, dots[d].y, radius, 0, Math.PI * 2);
@@ -150,19 +147,13 @@
 	};
 
 	function drawAllDotsRandom(c) {
-		//use appropriate list
-		if (samplePhase == 1) {
-			curList = phase_one_list
-		};
-		if (samplePhase == 2) {
-			curList = phase_two_list
-		};
+
 		// initialize with first dot
 		var dots = [];
 		var check = 0;
 		var gap = 10;
 		// until we have all the dots we need for this stimulus
-		while (dots.length < curList.length) {
+		while (dots.length < current_list.length) {
 
 			// creates a dot variable that includes the x and y positions and some basic data about what stim that dot will become part of
 			var dot = {
@@ -201,11 +192,11 @@
 		var ctx = c.getContext(`2d`);
 
 		//draw each dot
-		for (d = 0; d < curList.length; d++) {
+		for (d = 0; d < current_list.length; d++) {
 			ctx.beginPath();
 			ctx.moveTo(dots[d].x, dots[d].y);
 			ctx.arc(dots[d].x, dots[d].y, radius, 0, Math.PI * 2);
-			ctx.fillStyle = curList[d];
+			ctx.fillStyle = current_list[d];
 			ctx.fill();
 			ctx.closePath();
 		}
@@ -233,6 +224,9 @@
 
 	timeline.push(instructions)
 
+
+	// *********** BOX ONE *********** //
+
 	// instructions for drawing sample 1, i.e., phase one
 	phase_one_instructions = "<p>In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
 
@@ -250,6 +244,7 @@
 
 	// sample 1, phase 1 - stim presentation procedure
 
+	var current_list = box_one_phase_one_list
 	var phase_one_display = {
 		type: jsPsychCanvasKeyboardResponse,
 		canvas_size: [600, 600],
@@ -263,34 +258,34 @@
 
 	var phase_one_procedure = {
 		timeline: [phase_one_display],
-		timeline_variables: phase1Details
+		timeline_variables: box1phase1Details
 	}
 
 	timeline.push(phase_one_procedure)
 
 	// DVs after the first sample, i.e., phase 1
-	numerator_q = "<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are " + major_color + "?</p>"
-	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
+	numerator_q_1 = "<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are " + major_color + "?</p>"
+	denominator_q_1 = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
-	var numerator_dv = {
+	var numerator_dv_1 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: numerator_q
+		prompt: numerator_q_1
 	};
 
-	var denominator_dv = {
+	var denominator_dv_1 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: denominator_q
+		prompt: denominator_q_1
 	};
-	timeline.push(numerator_dv)
-	timeline.push(denominator_dv)
+	timeline.push(numerator_dv_1)
+	timeline.push(denominator_dv_1)
 
 	//phase 2 begins
 	//phase 2 instructions
@@ -310,6 +305,7 @@
 	timeline.push(phase_two_instructions)
 
 	//sample 2; i.e., phase 2 - stim presentation procedure
+	var current_list = box_one_phase_two_list
 	var phase_two_display = {
 		type: jsPsychCanvasKeyboardResponse,
 		canvas_size: [600, 600],
@@ -323,34 +319,76 @@
 
 	var phase_two_procedure = {
 		timeline: [phase_two_display],
-		timeline_variables: phase2Details
+		timeline_variables: box1phase2Details
 	}
 
 	timeline.push(phase_two_procedure)
 	// DVs after the second sample, i.e., phase 2
-	numerator_q = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
-	denominator_q = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
+	numerator_q_2 = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
+	denominator_q_2 = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
-	var numerator_dv = {
+	var numerator_dv_2 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: numerator_q
+		prompt: numerator_q_2
 	};
 
-	var denominator_dv = {
+	var denominator_dv_2 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: denominator_q
+		prompt: denominator_q_2
 	};
-	timeline.push(numerator_dv)
-	timeline.push(denominator_dv)
+	timeline.push(numerator_dv_2)
+	timeline.push(denominator_dv_2)
 
+	// **************** BOX TWO ***************** //
+
+	box_two_phase_one_instructions = "<p>Now you'll see balls from a new box. This box is unrelated to the first one. In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
+
+	var box_two_phase_one_instructions = {
+		type: jsPsychHtmlButtonResponse,
+		stimulus: box_two_phase_one_instructions,
+		choices: ['Next'],
+		post_trial_gap: 1000,
+		on_start: function () {
+			samplePhase = 1;
+		}
+	};
+
+	timeline.push(box_two_phase_one_instructions)
+
+	// first phase of sampling for box 2
+	var current_list = box_two_phase_one_list
+	var box_two_phase_one_procedure = {
+		timeline: [phase_one_display],
+		timeline_variables: box2phase1Details
+	}
+
+	timeline.push(box_two_phase_one_procedure)
+
+	// DVs
+	timeline.push(numerator_dv_1)
+	timeline.push(denominator_dv_1)
+
+	timeline.push(phase_two_instructions)
+
+	// second phase of sampling for box 2
+	var current_list = box_two_phase_two_list
+	var box_two_phase_two_procedure = {
+		timeline: [phase_two_display],
+		timeline_variables: box2phase2Details
+	}
+
+	timeline.push(box_two_phase_two_procedure)
+	
+	timeline.push(numerator_dv_2)
+	timeline.push(denominator_dv_2)
 
 	jsPsych.run(timeline);
 </script>
