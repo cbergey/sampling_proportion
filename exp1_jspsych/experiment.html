@@ -241,7 +241,7 @@
 
 	var instructions = {
 		type: jsPsychHtmlButtonResponse,
-		stimulus: jsPsych.timelineVariable(`instruction_phrase`),
+		stimulus: phase_one_instructions,
 		choices: ['Next'],
 		post_trial_gap: 1000,
 		on_start: function () {
@@ -261,37 +261,41 @@
 		on_finish: function () {
 			curTrial++;
 		},
-		timeline: function () {
-			if (condition == "sequential") {
-				return current_list//a timeline with denominator number of elements, one for each dot
-			}
-			if (condition == "simultaneous") {
-				return [current_list]// a timeline with one element, with the needed information about each dot
-			}
-		}
+		// timeline: function () {
+		// 	if (condition == "sequential") {
+		// 		return current_list//a timeline with denominator number of elements, one for each dot
+		// 	}
+		// 	if (condition == "simultaneous") {
+		// 		return [current_list]// a timeline with one element, with the needed information about each dot
+		// 	}
+		// }
 	}
 
-	var numerator_dv = {
+	var phase_one_procedure = {
+		timeline: [dot_display],
+		timeline_variables: box1phase1Details
+	}
+
+	var numerator_dv_1 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: jsPsych.timelineVariable(`num_dv_phrase`)
+		prompt: jsPsych.timelineVariable(`numerator_q_1`)
 	};
 
-	var remainder_dv = {
+	var remainder_dv_1 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: jsPsych.timelineVariable(`rem_dv_phrase`)
+		prompt: jsPsych.timelineVariable(`remainder_q_1`)
 	};
 
 	var sample_procedure = {
-		timeline: [instructions, dot_display, numerator_dv, remainder_dv],
-		timeline_variables: box1_phrases
+		timeline: [instructions, phase_one_procedure, numerator_dv_1, remainder_dv_1]
 	}
 
 	timeline.push(sample_procedure)
@@ -336,7 +340,7 @@
 	timeline.push(phase_two_procedure)
 	// DVs after the second sample, i.e., phase 2
 	numerator_q_2 = "<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are " + major_color + "?</p>"
-	denominator_q_2 = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
+	remainder_q_2 = "<p>What proportion of the balls in the box do you think are " + minor_color + "?</p>"
 
 	var numerator_dv_2 = {
 		type: jsPsychHtmlSliderResponse,
@@ -347,16 +351,16 @@
 		prompt: numerator_q_2
 	};
 
-	var denominator_dv_2 = {
+	var remainder_dv_2 = {
 		type: jsPsychHtmlSliderResponse,
 		labels: ['None (0%)', 'All (100%)'],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: denominator_q_2
+		prompt: remainder_q_2
 	};
 	timeline.push(numerator_dv_2)
-	timeline.push(denominator_dv_2)
+	timeline.push(remainder_dv_2)
 
 	// **************** BOX TWO ***************** //
 
@@ -377,7 +381,7 @@
 	// first phase of sampling for box 2
 	var current_list = box_two_phase_one_list
 	var box_two_phase_one_procedure = {
-		timeline: [phase_one_display],
+		timeline: [dot_display],
 		timeline_variables: box2phase1Details
 	}
 
@@ -385,7 +389,7 @@
 
 	// DVs
 	timeline.push(numerator_dv_1)
-	timeline.push(denominator_dv_1)
+	timeline.push(remainder_dv_1)
 
 	timeline.push(phase_two_instructions)
 
@@ -399,7 +403,7 @@
 	timeline.push(box_two_phase_two_procedure)
 
 	timeline.push(numerator_dv_2)
-	timeline.push(denominator_dv_2)
+	timeline.push(remainder_dv_2)
 
 	jsPsych.run(timeline);
 </script>
