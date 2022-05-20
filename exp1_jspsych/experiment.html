@@ -28,65 +28,67 @@
 	}
 
 	var conditions = ["sequential", "simultaneous"]
-
-	var variants = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
-
 	var colors = ["orange", "green"]
+	var radius = 30;
+	var nBlocks = 2; //number of blocks, i.e., separate boxes, we want each person to see
 
+	//5 possible sets of samples, each person will see two in separate blocks
+	var possible_proportions = [[[7, 9], [9, 17]], [[7, 16], [2, 10]], [[3, 15], [9, 11]], [[3, 8], [16, 18]], [[10, 13], [4, 13]]]
 
-	// setting a bunch of features
+	// setting necessary features for this run through
 	conditions = shuffle(conditions);
 	var condition = conditions.pop();
 
 	colors = shuffle(colors)
-	var major_color = colors.pop()
-	var minor_color = colors.pop()
+	var num_color = colors.pop()
+	var rem_color = colors.pop()
 
-	variants = shuffle(variants)
-	var box1props = shuffle(variants.pop())
-	var box2props = shuffle(variants.pop())
+	possible_proportions = shuffle(possible_proportions)
+	var proportions = possible_proportions.splice(-nBlocks)
 
-	var radius = 30;
-
-	var samplePhase = 0; //this will be 1 for phase 1, 2 for phase 2; initializing to 0
-	var curTrial = 0; //so that we can track the sample number for the sequential condition
+	var sample_number = 0; //to track the sample/phase from each box
+	var block_number = 0; //to track the number of boxes shown
+	var dot_number = 0; //so that we can track the sample number for the sequential condition
 
 	//making the stimuli and functions for drawing stimuli
-	//first, make the list of colors; this will be used for the order of stim in the sequential and simultaneous versions
-	function makeTrials(numerator, denominator, pos_value, neg_value) {
-		var pos_vals = Array(numerator).fill(pos_value)
-		var neg_vals = Array((denominator - numerator)).fill(neg_value)
-		var stims = shuffle(pos_vals.concat(neg_vals))
+
+	//this function takes the number and color of each set and outputs a list of color names
+	function makeColorList(numerator, denominator, num_color, rem_color) {
+		var num_dots = Array(numerator).fill(num_color)
+		var rem_dots = Array((denominator - numerator)).fill(rem_color)
+		var stims = shuffle(num_dots.concat(rem_dots))
 		return (stims)
 	}
 
-	var box_one_phase_one_list = makeTrials(box1props[0][0], box1props[0][1], major_color, minor_color)
-	var box_one_phase_two_list = makeTrials(box1props[1][0], box1props[1][1], major_color, minor_color)
-	var box_two_phase_one_list = makeTrials(box2props[0][0], box2props[0][1], major_color, minor_color)
-	var box_two_phase_two_list = makeTrials(box2props[1][0], box2props[1][1], major_color, minor_color)
+	//we want a list of the lists of colors
+	var colorLists;
+	var drawCondition;
 
 	if (condition == "sequential") {
-		var drawCondition = drawOneDot;
-		var box1phase1Details = box_one_phase_one_list;
-		var box1phase2Details = box_one_phase_two_list;
-		var box2phase1Details = box_two_phase_one_list;
-		var box2phase2Details = box_two_phase_two_list;
+		drawCondition = drawOneDot;
+		colorLists = [
+			{
+				sample1: makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
+				sample2: makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
+			},
+			{
+				sample1: makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
+				sample2: makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
+			}
+		];
 	};
 	if (condition == "simultaneous") {
-		var drawCondition = drawAllDotsRandom;
-		//because of the way the stimulus variable works to get number of repeats for trials
-		//there's probably a better way, but this works
-		var box1phase1Details = [
-			{ num: box1props[0][0], den: box1props[0][1] }
-		];
-		var box1phase2Details = [
-			{ num: box1props[1][0], den: box1props[1][1] }
-		];
-		var box2phase1Details = [
-			{ num: box2props[0][0], den: box2props[0][1] }
-		];
-		var box2phase2Details = [
-			{ num: box2props[1][0], den: box2props[1][1] }
+		drawCondition = drawAllDotsRandom;
+		//need to change the indexing of these lists so that the timeline variable only treats it as one thing for simultaneous presentation
+		colorLists = [
+			{
+				sample1: [makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
+				sample2: [makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
+			},
+			{
+				sample1: [makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
+				sample2: [makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
+			}
 		];
 	};
 
@@ -202,6 +204,7 @@
 
 	// initialize timeline and push each aspect of procedure as we go
 	var timeline = [];
+
 	// preloading images - but we can remove this if we're drawing dots instead, right?
 	//but maybe need to pre-load the image of a box if we're using that?
 	var preload = {
@@ -222,41 +225,34 @@
 
 	timeline.push(global_instructions)
 
-
-	// *********** BOX ONE *********** //
-
-	//need to make the box1_details 
-	// 	box1_details
-	// needs to include:
-	// “instruction_phrase” for each sample
-	// “num_dv_phrase” for each sample
-	// “rem_dv_phrase” for each sample
-	// “current_list” —> the name of the list of green/orange
-
+	//setting the list of prompts to use for the sampling procedure
 	var sampling_prompts = [
 		//prompts for sample 1
-		{instruct_prompt: `<p>In this box, there are ${major_color} balls and ${minor_color} balls. Now we will show you some of the balls in the box, but not all of the balls. </p>`,
-		num_dv_prompt: `<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are ${major_color}?</p>`,
-		rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${minor_color}?</p>`},
-//prompts for sample 2
-		{instruct_prompt: `<p>Now we will show you more balls from the same box.</p>`,
-		num_dv_prompt: `<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are ${major_color}?</p>`,
-		rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${minor_color}?</p>`}
+		{
+			instruct_prompt: `<p>In this box, there are ${major_color} balls and ${minor_color} balls. Now we will show you some of the balls in the box, but not all of the balls. </p>`,
+			num_dv_prompt: `<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are ${major_color}?</p>`,
+			rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${minor_color}?</p>`
+		},
+		//prompts for sample 2
+		{
+			instruct_prompt: `<p>Now we will show you more balls from the same box.</p>`,
+			num_dv_prompt: `<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are ${major_color}?</p>`,
+			rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${minor_color}?</p>`
+		}
 	]
 
+	//setting the sampling procedure components
 	var sample_instructions = {
 		type: jsPsychHtmlButtonResponse,
 		stimulus: jsPsych.timelineVariable(`instruct_prompt`),
 		choices: ['Next'],
 		post_trial_gap: 1000,
 		on_start: function () {
-			samplePhase = 1;
+			sample_number ++;
 		}
 	};
 
-	var current_list
-
-	var display_sample = {
+	var sample_display = {
 		type: jsPsychCanvasKeyboardResponse,
 		canvas_size: [600, 600],
 		stimulus: drawCondition,
@@ -297,7 +293,7 @@
 
 	var sample_procedure = {
 		timeline: [sample_instructions, sample_display, numerator_dv, remainder_dv],
-		timelineVariables: sampling_prompts 
+		timelineVariables: sampling_prompts
 	}
 
 	timeline.push(sample_procedure)
