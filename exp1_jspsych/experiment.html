@@ -61,46 +61,48 @@
 	}
 
 	//we want a list of the lists of colors
-	var colorLists;
-	var drawCondition;
+	var stim_fulllist, current_list;
 
 	if (condition == "sequential") {
 		drawCondition = drawOneDot;
-		colorLists = [
-			{
-				sample1: makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
-				sample2: makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
-			},
-			{
-				sample1: makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
-				sample2: makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
-			}
-		];
+		stim_fulllist = [
+			//block 1
+			[
+				makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
+				makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
+			],
+			//block 2
+			[
+				makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
+				makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
+			]];
 	};
 	if (condition == "simultaneous") {
 		drawCondition = drawAllDotsRandom;
 		//need to change the indexing of these lists so that the timeline variable only treats it as one thing for simultaneous presentation
-		colorLists = [
-			{
-				sample1: [makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
-				sample2: [makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
-			},
-			{
-				sample1: [makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
-				sample2: [makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
-			}
-		];
+		stim_fulllist = [
+			//block 1
+			[
+				[makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
+				[makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
+			],
+			//block 2
+			[
+				[makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
+				[makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
+			]];
 	};
 
 
 	//function for sequntial condition
 	function drawOneDot(c) {
+
 		// set parameters for dot
 		var onlyDot = {
 			x: 300,
 			y: 200,
 			radius: radius,
-			color: current_list[curTrial]
+			color: current_list[dot_number]
 		}
 
 		var ctx = c.getContext(`2d`);
@@ -113,40 +115,8 @@
 		ctx.closePath();
 	};
 
-	function drawAllDotsGrid(c) {
-		// initialize with first dot
-		var dots = [];
-		var firstDot = {
-			x: 140 + 10 + radius,
-			y: 10 + radius,
-			radius: radius,
-			color: current_list[0]
-		}
-		dots.push(firstDot)
-		for (var d = 1; d < current_list.length; d++) {
-			var dot = {
-				x: (140 + 10 + radius) + (radius * 2 + 10) * (d % 4),
-				y: (10 + radius) + (radius * 2 + 10) * (Math.floor(d / 4)),
-				radius: radius,
-				color: current_list[d]
-			}
-			dots.push(dot)
-		}
-
-		var ctx = c.getContext(`2d`);
-
-		//draw each dot
-		for (d = 0; d < current_list.length; d++) {
-			ctx.beginPath();
-			ctx.moveTo(dots[d].x, dots[d].y);
-			ctx.arc(dots[d].x, dots[d].y, radius, 0, Math.PI * 2);
-			ctx.fillStyle = dots[d].color;
-			ctx.fill();
-			ctx.closePath();
-		}
-	};
-
 	function drawAllDotsRandom(c) {
+		current_list = current_list[0] //just need to get it out of the compressed form
 
 		// initialize with first dot
 		var dots = [];
@@ -207,11 +177,11 @@
 
 	// preloading images - but we can remove this if we're drawing dots instead, right?
 	//but maybe need to pre-load the image of a box if we're using that?
-	var preload = {
-		type: jsPsychPreload,
-		images: ['stim_images/orange_dot.png', 'stim_images/green_dot.png']
-	};
-	timeline.push(preload);
+	// var preload = {
+	// 	type: jsPsychPreload,
+	// 	images: ['stim_images/orange_dot.png', 'stim_images/green_dot.png']
+	// };
+	// timeline.push(preload);
 
 	// overall task instructions
 	var global_instructions = {
@@ -227,28 +197,30 @@
 
 	//setting the list of prompts to use for the sampling procedure
 	var sampling_prompts = [
-		//prompts for sample 1
 		{
-			instruct_prompt: `<p>In this box, there are ${major_color} balls and ${minor_color} balls. Now we will show you some of the balls in the box, but not all of the balls. </p>`,
-			num_dv_prompt: `<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are ${major_color}?</p>`,
-			rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${minor_color}?</p>`
+			instruct_prompt: `<p>In this box, there are ${num_color} balls and ${rem_color} balls. Now we will show you some of the balls in the box, but not all of the balls. </p>`,
+			num_dv_prompt: `<p>Remember, that was just some of the balls from the box. What proportion of the balls in the box do you think are ${num_color}?</p>`,
+			rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${rem_color}?</p>`
 		},
-		//prompts for sample 2
 		{
 			instruct_prompt: `<p>Now we will show you more balls from the same box.</p>`,
-			num_dv_prompt: `<p>Now that you’ve seen even more balls from the box, what proportion of the balls in the box do you think are ${major_color}?</p>`,
-			rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${minor_color}?</p>`
+			num_dv_prompt: `<p>Now that you've seen even more balls from the box, what proportion of the balls in the box do you think are ${num_color}?</p>`,
+			rem_dv_prompt: `<p>What proportion of the balls in the box do you think are ${rem_color}?</p>`
 		}
-	]
+	];
 
 	//setting the sampling procedure components
 	var sample_instructions = {
 		type: jsPsychHtmlButtonResponse,
-		stimulus: jsPsych.timelineVariable(`instruct_prompt`),
+		stimulus: function () {
+			return sampling_prompts[sample_number].instruct_prompt
+		},
 		choices: ['Next'],
 		post_trial_gap: 1000,
-		on_start: function () {
-			sample_number ++;
+		on_finish: function () {
+			sample_number++;
+			dot_number = 0; //resetting
+			current_list = stim_fulllist[block_number - 1][sample_number - 1];
 		}
 	};
 
@@ -259,88 +231,112 @@
 		choices: ` `, //this is space
 		post_trial_gap: 500,
 		on_finish: function () {
-			curTrial++;
-		},
-		on_start: function () {
-			if (condition == "sequential") {
-				current_list = box_one_phase_one_list;
-				return current_list //a timeline with denominator number of elements, one for each dot
-			}
-			if (condition == "simultaneous") {
-				current_list = box_one_phase_one_list;
-				return [current_list]// a timeline with one element, with the needed information about each dot
-			}
+			dot_number++;
 		}
+	}
+
+	var sequential_display = {
+		timeline: [sample_display],
+		repetitions: 10
 	}
 
 	var numerator_dv = {
 		type: jsPsychHtmlSliderResponse,
-		labels: [`None are ${majorcolor} (0%)`, `All are ${majorcolor} (100%)`],
+		labels: [`None are ${num_color} (0%)`, `All are ${num_color} (100%)`],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: jsPsych.timelineVariable(`num_dv_prompt`)
+		prompt: function () {
+			return sampling_prompts[sample_number - 1].num_dv_prompt
+		}
 	};
 
 	var remainder_dv = {
 		type: jsPsychHtmlSliderResponse,
-		labels: [`None are ${minorcolor} (0%)`, `All are ${minorcolor} (100%)`],
+		labels: [`None are ${rem_color} (0%)`, `All are ${rem_color} (100%)`],
 		stimulus: "",
 		slider_width: 500,
 		require_movement: true,
-		prompt: jsPsych.timelineVariable(`rem_dv_prompt`)
+		prompt: function () {
+			return sampling_prompts[sample_number - 1].rem_dv_prompt
+		}
 	};
-
-	var sample_procedure = {
-		timeline: [sample_instructions, sample_display, numerator_dv, remainder_dv],
-		timelineVariables: sampling_prompts
+	if (condition == "sequential") {
+		var sampling_procedure = {
+			timeline: [sample_instructions, sequential_display, numerator_dv, remainder_dv],
+			repetitions: 2
+		}
+	};
+	if (condition == "simultaneous") {
+		var sampling_procedure = {
+			timeline: [sample_instructions, sample_display, numerator_dv, remainder_dv],
+			repetitions: 2
+		}
 	}
 
-	timeline.push(sample_procedure)
+	var block_instructions = {
+		type: jsPsychHtmlButtonResponse,
+		stimulus: function() {
+			return 'This is Box' + (block_number + 1);
+		},
+		choices: ['Next'],
+		post_trial_gap: 1000,
+		on_finish: function () {
+			block_number++;
+			sample_number = 0; //resetting
+		}
+	};
+
+	var block_procedure = {
+		timeline: [block_instructions, sampling_procedure],
+		repetitions: 2
+	};
+
+	timeline.push(block_procedure)
 
 
 	// **************** BOX TWO ***************** //
 
-	box_two_phase_one_instructions = "<p>Now you'll see balls from a new box. This box is unrelated to the first one. In this box, there are " + major_color + " balls and " + minor_color + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
+	// box_two_phase_one_instructions = "<p>Now you'll see balls from a new box. This box is unrelated to the first one. In this box, there are " + "major_color" + " balls and " + "minor_color" + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
 
-	var box_two_phase_one_instructions = {
-		type: jsPsychHtmlButtonResponse,
-		stimulus: box_two_phase_one_instructions,
-		choices: ['Next'],
-		post_trial_gap: 1000,
-		on_start: function () {
-			samplePhase = 1;
-		}
-	};
+	// var box_two_phase_one_instructions = {
+	// 	type: jsPsychHtmlButtonResponse,
+	// 	stimulus: box_two_phase_one_instructions,
+	// 	choices: ['Next'],
+	// 	post_trial_gap: 1000,
+	// 	on_start: function () {
+	// 		samplePhase = 1;
+	// 	}
+	// };
 
-	timeline.push(box_two_phase_one_instructions)
+	// timeline.push(box_two_phase_one_instructions)
 
-	// first phase of sampling for box 2
-	var current_list = box_two_phase_one_list
-	var box_two_phase_one_procedure = {
-		timeline: [dot_display],
-		timeline_variables: box2phase1Details
-	}
+	// // first phase of sampling for box 2
+	// var current_list = box_two_phase_one_list
+	// var box_two_phase_one_procedure = {
+	// 	timeline: [dot_display],
+	// 	timeline_variables: box2phase1Details
+	// }
 
-	timeline.push(box_two_phase_one_procedure)
+	// timeline.push(box_two_phase_one_procedure)
 
-	// DVs
-	timeline.push(numerator_dv_1)
-	timeline.push(remainder_dv_1)
+	// // DVs
+	// timeline.push(numerator_dv_1)
+	// timeline.push(remainder_dv_1)
 
-	timeline.push(phase_two_instructions)
+	// timeline.push(phase_two_instructions)
 
-	// second phase of sampling for box 2
-	var current_list = box_two_phase_two_list
-	var box_two_phase_two_procedure = {
-		timeline: [phase_two_display],
-		timeline_variables: box2phase2Details
-	}
+	// // second phase of sampling for box 2
+	// var current_list = box_two_phase_two_list
+	// var box_two_phase_two_procedure = {
+	// 	timeline: [phase_two_display],
+	// 	timeline_variables: box2phase2Details
+	// }
 
-	timeline.push(box_two_phase_two_procedure)
+	// timeline.push(box_two_phase_two_procedure)
 
-	timeline.push(numerator_dv_2)
-	timeline.push(remainder_dv_2)
+	// timeline.push(numerator_dv_2)
+	// timeline.push(remainder_dv_2)
 
 	jsPsych.run(timeline);
 </script>
