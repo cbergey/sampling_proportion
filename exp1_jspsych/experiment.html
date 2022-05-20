@@ -232,12 +232,17 @@
 		post_trial_gap: 500,
 		on_finish: function () {
 			dot_number++;
+		},
+		timeline: function() {
+			return current_list
 		}
 	}
 
 	var sequential_display = {
 		timeline: [sample_display],
-		repetitions: 10
+		timeline_variables: function() {
+			return stim_fulllist[block_number - 1][sample_number - 1]
+		}
 	}
 
 	var numerator_dv = {
@@ -277,7 +282,7 @@
 	var block_instructions = {
 		type: jsPsychHtmlButtonResponse,
 		stimulus: function() {
-			return 'This is Box' + (block_number + 1);
+			return 'This is Box ' + (block_number + 1);
 		},
 		choices: ['Next'],
 		post_trial_gap: 1000,
@@ -293,50 +298,6 @@
 	};
 
 	timeline.push(block_procedure)
-
-
-	// **************** BOX TWO ***************** //
-
-	// box_two_phase_one_instructions = "<p>Now you'll see balls from a new box. This box is unrelated to the first one. In this box, there are " + "major_color" + " balls and " + "minor_color" + " balls. Now we will show you some of the balls in the box, but not all of the balls.  </p>"
-
-	// var box_two_phase_one_instructions = {
-	// 	type: jsPsychHtmlButtonResponse,
-	// 	stimulus: box_two_phase_one_instructions,
-	// 	choices: ['Next'],
-	// 	post_trial_gap: 1000,
-	// 	on_start: function () {
-	// 		samplePhase = 1;
-	// 	}
-	// };
-
-	// timeline.push(box_two_phase_one_instructions)
-
-	// // first phase of sampling for box 2
-	// var current_list = box_two_phase_one_list
-	// var box_two_phase_one_procedure = {
-	// 	timeline: [dot_display],
-	// 	timeline_variables: box2phase1Details
-	// }
-
-	// timeline.push(box_two_phase_one_procedure)
-
-	// // DVs
-	// timeline.push(numerator_dv_1)
-	// timeline.push(remainder_dv_1)
-
-	// timeline.push(phase_two_instructions)
-
-	// // second phase of sampling for box 2
-	// var current_list = box_two_phase_two_list
-	// var box_two_phase_two_procedure = {
-	// 	timeline: [phase_two_display],
-	// 	timeline_variables: box2phase2Details
-	// }
-
-	// timeline.push(box_two_phase_two_procedure)
-
-	// timeline.push(numerator_dv_2)
-	// timeline.push(remainder_dv_2)
 
 	jsPsych.run(timeline);
 </script>
