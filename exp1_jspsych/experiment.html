@@ -63,34 +63,23 @@
 	//we want a list of the lists of colors
 	var stim_fulllist, current_list;
 
+	stim_fulllist = [
+		//block 1
+		[
+			makeColorList(proportions[0][0][0], proportions[0][0][1], num_color, rem_color),
+			makeColorList(proportions[0][1][0], proportions[0][1][1], num_color, rem_color)
+		],
+		//block 2
+		[
+			makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
+			makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
+		]];
+
 	if (condition == "sequential") {
 		drawCondition = drawOneDot;
-		stim_fulllist = [
-			//block 1
-			[
-				makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
-				makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
-			],
-			//block 2
-			[
-				makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color),
-				makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)
-			]];
 	};
 	if (condition == "simultaneous") {
 		drawCondition = drawAllDotsRandom;
-		//need to change the indexing of these lists so that the timeline variable only treats it as one thing for simultaneous presentation
-		stim_fulllist = [
-			//block 1
-			[
-				[makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
-				[makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
-			],
-			//block 2
-			[
-				[makeColorList(proportions[1][0][0], proportions[1][0][1], num_color, rem_color)],
-				[makeColorList(proportions[1][1][0], proportions[1][1][1], num_color, rem_color)]
-			]];
 	};
 
 
@@ -116,8 +105,6 @@
 	};
 
 	function drawAllDotsRandom(c) {
-		current_list = current_list[0] //just need to get it out of the compressed form
-
 		// initialize with first dot
 		var dots = [];
 		var check = 0;
@@ -217,10 +204,12 @@
 		},
 		choices: ['Next'],
 		post_trial_gap: 1000,
+		on_start: function () {
+			current_list = stim_fulllist[block_number - 1][sample_number]; //getting the correct list of dot colors for this sample run
+		},
 		on_finish: function () {
 			sample_number++;
 			dot_number = 0; //resetting
-			current_list = stim_fulllist[block_number - 1][sample_number - 1];
 		}
 	};
 
@@ -232,18 +221,20 @@
 		post_trial_gap: 500,
 		on_finish: function () {
 			dot_number++;
-		},
-		timeline: function() {
-			return current_list
 		}
 	}
 
-	var sequential_display = {
+	var sample_process = {
 		timeline: [sample_display],
-		timeline_variables: function() {
-			return stim_fulllist[block_number - 1][sample_number - 1]
+		//this will get the sampling process to loop the correct number of times for the sequetial condition ,and not at all for the simultaneous condition
+		loop_function: function (data) {
+			if (condition == "sequential" && dot_number < current_list.length) {
+				return true;
+			} else {
+				return false;
+			}
 		}
-	}
+	};
 
 	var numerator_dv = {
 		type: jsPsychHtmlSliderResponse,
@@ -266,22 +257,15 @@
 			return sampling_prompts[sample_number - 1].rem_dv_prompt
 		}
 	};
-	if (condition == "sequential") {
-		var sampling_procedure = {
-			timeline: [sample_instructions, sequential_display, numerator_dv, remainder_dv],
-			repetitions: 2
-		}
-	};
-	if (condition == "simultaneous") {
-		var sampling_procedure = {
-			timeline: [sample_instructions, sample_display, numerator_dv, remainder_dv],
-			repetitions: 2
-		}
+
+	var sampling_procedure = {
+		timeline: [sample_instructions, sample_process, numerator_dv, remainder_dv],
+		repetitions: 2
 	}
 
 	var block_instructions = {
 		type: jsPsychHtmlButtonResponse,
-		stimulus: function() {
+		stimulus: function () {
 			return 'This is Box ' + (block_number + 1);
 		},
 		choices: ['Next'],
